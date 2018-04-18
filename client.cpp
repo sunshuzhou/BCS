@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     const int message_len = sizeof(uint32_t) * 72;
     printf("message_len: %d\n", message_len);
 
-    FILE *fp = fopen("16384_data.txt", "r");
+    FILE *fp = fopen("/home/sunshuzhou/Code/BCS/16384_data.txt", "r");
     if (!fp) {
         perror("Open file error\n");
     }
@@ -82,6 +82,7 @@ int main(int argc, char *argv[]) {
     }
 
     sleep(2);
+    fp = fopen("/home/sunshuzhou/Code/BCS/log", "w");
 
 #pragma omp parallel for num_threads(N_C) shared(gRequest)
     for (int i = 0; i < N_C; i++) {
@@ -99,9 +100,11 @@ int main(int argc, char *argv[]) {
 
             len = read(connection[i], message, 1024);
             end = get_unix_time();
-            printf("Client(%d): start: %f, end: %f, cost: %f\n", connection[i], start, end, end - start);
+            fprintf(fp, "Client(%d): start: %f, end: %f, cost: %f\n", connection[i], start, end, end - start);
         }
     }
+
+    fclose(fp);
 
     for (int i = 0; i < N_C; i++) {
         shutdown(connection[i], 2);

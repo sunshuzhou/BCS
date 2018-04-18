@@ -9,7 +9,7 @@ flags += -lboost_thread -lboost_timer -lpthread -lboost_system -O3 -fomit-frame-
 
 all: $(targets)
 
-$(obj): %.o: %.cpp
+$(obj): %.o: %.cpp *.h
 	g++ $< -c -o $@ $(flags)
 
 $(targets): %: %.o
