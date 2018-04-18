@@ -6,11 +6,31 @@
 #include <string.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <time.h>
+
+#include "param.h"
 
 #define BUFFSIZE 32
 void Die(char *mess) { perror(mess); exit(1); }
 
-#define N_C 64
+/**
+ * return time in millisecond
+ */
+double get_unix_time(void) {
+    struct timespec tv;
+    if (clock_gettime(CLOCK_REALTIME, &tv) != 0) {
+        printf("Error at getting unix time...\n");
+    }
+    return (tv.tv_sec * 1e3 + (tv.tv_nsec * 1e-6));
+}
+
+#define N_C (N_FETCHER * N_EACH)
+
+typedef struct {
+    uint32_t data[72];
+} Request;
+
+Request gRequest[16384];
 
 int main(int argc, char *argv[]) {
     int sock;
@@ -18,6 +38,21 @@ int main(int argc, char *argv[]) {
     char buffer[BUFFSIZE];
     unsigned int echolen;
     int received = 0;
+
+    const int message_len = sizeof(uint32_t) * 72;
+    printf("message_len: %d\n", message_len);
+
+    FILE *fp = fopen("16384_data.txt", "r");
+    if (!fp) {
+        perror("Open file error\n");
+    }
+    for (int i = 0; i < 16384; i++) {
+        for (int j = 0; j < 72; j++) {
+            fscanf(fp, "%u", &gRequest[i].data[j]);
+            gRequest[i].data[j] = htonl(gRequest[i].data[j]);
+        }
+    }
+    fclose(fp);
 
     /*
        if (argc != 4) {
@@ -48,19 +83,23 @@ int main(int argc, char *argv[]) {
 
     sleep(2);
 
-
-
-#pragma omp parallel for num_threads(N_C)
+#pragma omp parallel for num_threads(N_C) shared(gRequest)
     for (int i = 0; i < N_C; i++) {
         char message[1024];
-        sprintf(message, "Hello from client %d\n", i);
+        //sprintf(message, "Hello from client %d\n", i);
+        double start, end;
 
         for (;;) {
-            size_t len = write(connection[i], message, strlen(message));
-            printf("Client(%d): %d bytes writed\n", i, len);
-            read(connection[i], message, 1024);
-            printf("%s", message);
-            sleep(1);
+            sprintf(message, "Hello from client %d\n", i);
+            start = get_unix_time();
+
+            size_t len = write(connection[i], gRequest[i].data, message_len);
+
+            //printf("Client(%d): waiting answers\n", connection[i], len);
+
+            len = read(connection[i], message, 1024);
+            end = get_unix_time();
+            printf("Client(%d): start: %f, end: %f, cost: %f\n", connection[i], start, end, end - start);
         }
     }
 
