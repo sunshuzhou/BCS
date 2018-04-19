@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
         double start, end;
 
         for (;;) {
-            sprintf(message, "Hello from client %d\n", i);
+            //sprintf(message, "Hello from client %d\n", i);
             start = get_unix_time();
 
             size_t len = write(connection[i], gRequest[i].data, message_len);
