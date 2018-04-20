@@ -91,15 +91,17 @@ int main(int argc, char *argv[]) {
         double start, end;
 
         for (;;) {
+            //printf("gRequest[0].data[0]: %08x\n", gRequest[0].data[0]);
             //sprintf(message, "Hello from client %d\n", i);
+            //printf("Client(%d) send message\n", i);
             start = get_unix_time();
-
             size_t len = write(connection[i], gRequest[i].data, message_len);
 
             //printf("Client(%d): waiting answers\n", connection[i], len);
 
             len = read(connection[i], message, 1024);
             end = get_unix_time();
+            //printf("Client(%d) receive message\n", i);
             fprintf(fp, "Client(%d): start: %f, end: %f, cost: %f\n", connection[i], start, end, end - start);
         }
     }
