@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     int received = 0;
 
     const int message_len = sizeof(uint32_t) * 72;
-    printf("message_len: %d\n", message_len);
+    //printf("message_len: %d\n", message_len);
 
     FILE *fp = fopen("/home/sunshuzhou/Code/BCS/16384_data.txt", "r");
     if (!fp) {
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
     }
     for (int i = 0; i < 16384; i++) {
         for (int j = 0; j < 72; j++) {
-            fscanf(fp, "%u", &gRequest[i].data[j]);
+            int r = fscanf(fp, "%u", &gRequest[i].data[j]);
             gRequest[i].data[j] = htonl(gRequest[i].data[j]);
         }
     }
@@ -62,7 +62,8 @@ int main(int argc, char *argv[]) {
        */
     /* Create the TCP socket */
     if ((sock = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-        Die("Failed to create socket");
+        printf("Failed to create socket\n");
+        exit(1);
     }
 
     /* Construct the server sockaddr_in structure */
@@ -75,13 +76,14 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < N_C; i++) {
         connection[i] = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (connect(connection[i], (struct sockaddr *) &echoserver, sizeof(echoserver)) < 0) {
-            Die("Failed to connect with server");
+            printf("Failed to connect with server\n");
+            exit(1);
         } else {
-            printf("%d connected at socket: %d\n", i, connection[i]);
+            //printf("%d connected at socket: %d\n", i, connection[i]);
         }
     }
 
-    sleep(2);
+    //sleep(2);
     fp = fopen("/home/sunshuzhou/Code/BCS/log", "w");
 
 #pragma omp parallel for num_threads(N_C) shared(gRequest)
@@ -112,25 +114,5 @@ int main(int argc, char *argv[]) {
         shutdown(connection[i], 2);
     }
 
-    /* Send the word to the server */
-    echolen = strlen(argv[2]);
-    if (send(sock, argv[2], echolen, 0) != echolen) {
-        Die("Mismatch in number of sent bytes");
-    }
-
-    /* Receive the word back from the server */
-    fprintf(stdout, "Received: ");
-    while (received < echolen) {
-        int bytes = 0;
-        if ((bytes = recv(sock, buffer, BUFFSIZE-1, 0)) < 1) {
-            Die("Failed to receive bytes from server");
-        }
-        received += bytes;
-        buffer[bytes] = '\0';        /* Assure null terminated string */
-        fprintf(stdout, buffer);
-    }
-
-    fprintf(stdout, "\n");
-    close(sock);
     exit(0);
 }
